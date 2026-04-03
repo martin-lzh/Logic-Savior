@@ -176,6 +176,32 @@ const inputText = ref('')
 const textareaEl = ref<HTMLTextAreaElement | null>(null)
 const inputCollapsed = ref(false)
 
+// --- Verbosity & Objectivity sliders ---
+const VERBOSITY_LABELS: Record<number, string> = {
+  1: 'One sentence',
+  2: 'TL;DR',
+  3: 'Bullet points',
+  4: 'Compact',
+  5: 'Standard',
+  6: 'Detailed',
+  7: 'Comprehensive',
+}
+const OBJECTIVITY_LABELS: Record<number, string> = {
+  1: 'Fact-check',
+  2: 'Facts only',
+  3: 'Neutral report',
+  4: 'Balanced',
+  5: 'Preserve voice',
+  6: 'Expressive',
+  7: 'Full color',
+}
+
+const verbosity = ref(Number(localStorage.getItem('logic_saver_verbosity')) || 5)
+const objectivity = ref(Number(localStorage.getItem('logic_saver_objectivity')) || 5)
+
+watch(verbosity, (v) => localStorage.setItem('logic_saver_verbosity', String(v)))
+watch(objectivity, (v) => localStorage.setItem('logic_saver_objectivity', String(v)))
+
 // --- Image upload ---
 const { images, imageError, addFiles, removeImage, clearImages, handlePaste, handleDrop, handleDragOver } = useImageUpload()
 const fileInputEl = ref<HTMLInputElement | null>(null)
@@ -250,7 +276,7 @@ function handleSubmit() {
   lastSubmittedImages.value = currentImages
   inputCollapsed.value = true
   nextTick(autoResize)
-  submit(text, currentImages)
+  submit(text, currentImages, verbosity.value, objectivity.value)
   clearImages()
 }
 
@@ -584,6 +610,57 @@ onMounted(() => {
         <p v-if="imageError" class="mt-1.5 text-xs text-red-500">{{ imageError }}</p>
       </div>
 
+      <!-- Verbosity & Objectivity sliders -->
+      <div class="mb-5 space-y-4">
+        <!-- Verbosity -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-medium uppercase tracking-wider text-accent-light/60 dark:text-accent-dark/60">
+              Verbosity
+            </label>
+            <span class="text-xs font-medium text-accent-light dark:text-accent-dark">
+              {{ VERBOSITY_LABELS[verbosity] }}
+            </span>
+          </div>
+          <input
+            v-model.number="verbosity"
+            type="range"
+            min="1"
+            max="7"
+            step="1"
+            class="slider w-full"
+          />
+          <div class="flex justify-between mt-1">
+            <span class="text-[10px] text-accent-light/40 dark:text-accent-dark/40">One sentence</span>
+            <span class="text-[10px] text-accent-light/40 dark:text-accent-dark/40">Comprehensive</span>
+          </div>
+        </div>
+
+        <!-- Objectivity -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-medium uppercase tracking-wider text-accent-light/60 dark:text-accent-dark/60">
+              Objectivity
+            </label>
+            <span class="text-xs font-medium text-accent-light dark:text-accent-dark">
+              {{ OBJECTIVITY_LABELS[objectivity] }}
+            </span>
+          </div>
+          <input
+            v-model.number="objectivity"
+            type="range"
+            min="1"
+            max="7"
+            step="1"
+            class="slider w-full"
+          />
+          <div class="flex justify-between mt-1">
+            <span class="text-[10px] text-accent-light/40 dark:text-accent-dark/40">Fact-check</span>
+            <span class="text-[10px] text-accent-light/40 dark:text-accent-dark/40">Full color</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Error display -->
       <div
         v-if="chatError"
@@ -730,5 +807,71 @@ onMounted(() => {
 .prose h5,
 .prose h6 {
   font-family: 'Source Serif 4', Georgia, ui-serif, serif;
+}
+
+/* Custom range slider */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.08);
+  outline: none;
+  cursor: pointer;
+}
+
+.dark .slider {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--thumb-color, #101010);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.slider::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+
+.dark .slider::-webkit-slider-thumb {
+  background: var(--thumb-color-dark, #F5F5F5);
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--thumb-color, #101010);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.dark .slider::-moz-range-thumb {
+  background: var(--thumb-color-dark, #F5F5F5);
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.dark .slider::-moz-range-track {
+  background: rgba(255, 255, 255, 0.08);
 }
 </style>

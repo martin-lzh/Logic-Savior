@@ -22,20 +22,72 @@ const PROVIDER_DEFAULTS: Record<Provider, { model: string; storageKey: string; b
   },
 }
 
-const SYSTEM_PROMPT = `You are a professional editor. The user will paste raw text or images (screenshots, photos of text, etc.) — content may be disorganized, filled with filler words, inconsistent punctuation, or stream-of-consciousness in structure.
+// --- Verbosity levels (1-7) ---
+const VERBOSITY_INSTRUCTIONS: Record<number, string> = {
+  1: 'Condense the ENTIRE input into a single sentence that captures the core message.',
+  2: 'Write a TL;DR summary of 2-3 sentences covering only the most essential points.',
+  3: 'Present the content as a concise bullet-point list. Each bullet should be one line. No prose paragraphs.',
+  4: 'Write compact short paragraphs. Do not expand on anything — keep it tighter than the original. Remove all non-essential detail.',
+  5: 'Restructure and clean the content while preserving the same level of detail as the original. Do not add or remove significant information.',
+  6: 'Provide a detailed rewrite: expand abbreviations, clarify implicit references, add brief section introductions, and explain jargon where it appears.',
+  7: 'Produce a comprehensive version: add relevant background context, definitions for technical terms, and supporting details drawn from general knowledge to make the content self-contained.',
+}
 
-Your task:
-1. If images are provided, first extract and recognize all text from them (OCR). Combine with any accompanying text.
-2. Fix all grammar, spelling, and punctuation errors silently.
-3. Identify the core logical hierarchy: main topic → subtopics → supporting details.
-4. Rewrite the content as clean Markdown:
-   - Use ## for the main topic, ### for subtopics.
-   - Use bullet lists for parallel items; numbered lists only for sequential steps.
-   - Bold (**) the single most important phrase per section.
-   - Remove filler, redundancy, and meta-commentary (e.g., "so basically", "I think").
-5. Preserve the author's original meaning and voice. Do not add information that wasn't implied.
-6. **Output language**: Always match the language of the user's input. If the text is in Chinese, output in Chinese. If in English, output in English. If mixed, follow the dominant language.
-7. Output only the Markdown. No preamble, no explanation, no code fences.`
+// --- Objectivity levels (1-7) ---
+const OBJECTIVITY_INSTRUCTIONS: Record<number, string> = {
+  1: 'Strict fact-check mode: strip ALL opinions, subjective language, and unverifiable claims. Output only statements that can be independently verified. Flag or remove anything speculative.',
+  2: 'Remove most opinions and subjective phrasing. Retain only factual claims. Where a claim is uncertain, note it briefly.',
+  3: 'Rewrite in a detached third-person journalistic tone. Report what was said/claimed without endorsing it. Use attribution phrases like "the author states" or "according to the text".',
+  4: 'Preserve factual content. Soften strong opinions into measured, balanced statements. Replace absolutes with hedged language (e.g., "always" → "often").',
+  5: 'Preserve the author\'s original meaning, voice, and tone. Do not add information that wasn\'t implied. Keep opinions as-is.',
+  6: 'Retain the author\'s emotional language, rhetorical devices, and personal perspective. Preserve emphasis, exclamations, and persuasive framing.',
+  7: 'Keep ALL subjective details, hyperbole, slang, raw emotional expression, and personal color exactly as the author expressed them. Do not tone down or neutralize anything.',
+}
+
+function buildSystemPrompt(verbosity: number, objectivity: number): string {
+  const v = Math.max(1, Math.min(7, verbosity))
+  const o = Math.max(1, Math.min(7, objectivity))
+
+  return `<role>
+You are a professional editor. The user will paste raw text or images (screenshots, photos of text, etc.) — content may be disorganized, filled with filler words, inconsistent punctuation, or stream-of-consciousness in structure.
+</role>
+
+<task>
+<step>If images are provided, first extract and recognize all text from them (OCR). Combine with any accompanying text.</step>
+<step>Fix all grammar, spelling, and punctuation errors silently.</step>
+<step>Identify the core logical hierarchy: main topic → subtopics → supporting details.</step>
+<step>Rewrite the content as clean Markdown:
+- Use ## for the main topic, ### for subtopics.
+- Use bullet lists for parallel items; numbered lists only for sequential steps.
+- Bold (**) the single most important phrase per section.
+- Remove filler, redundancy, and meta-commentary (e.g., "so basically", "I think").</step>
+</task>
+
+<verbosity level="${v}">
+${VERBOSITY_INSTRUCTIONS[v]}
+</verbosity>
+
+<objectivity level="${o}">
+${OBJECTIVITY_INSTRUCTIONS[o]}
+</objectivity>
+
+<constraints>
+<language>Always match the language of the user's input. If the text is in Chinese, output in Chinese. If in English, output in English. If mixed, follow the dominant language.</language>
+<output>Output only the Markdown. No preamble, no explanation, no code fences.</output>
+</constraints>`
+}
+
+// Map verbosity level to max_tokens
+function getMaxTokens(verbosity: number): number {
+  const map: Record<number, number> = { 1: 256, 2: 512, 3: 1024, 4: 1536, 5: 2048, 6: 3072, 7: 4096 }
+  return map[Math.max(1, Math.min(7, verbosity))] ?? 2048
+}
+
+// Map objectivity level to temperature
+function getTemperature(objectivity: number): number {
+  const map: Record<number, number> = { 1: 0.1, 2: 0.15, 3: 0.2, 4: 0.25, 5: 0.3, 6: 0.4, 7: 0.5 }
+  return map[Math.max(1, Math.min(7, objectivity))] ?? 0.3
+}
 
 export function useChat() {
   const response = ref('')
@@ -50,7 +102,7 @@ export function useChat() {
     return 'openrouter'
   }
 
-  async function submit(userText: string, images: string[] = []) {
+  async function submit(userText: string, images: string[] = [], verbosity = 5, objectivity = 5) {
     const provider = getProvider()
     const config = PROVIDER_DEFAULTS[provider]
     const apiKey = localStorage.getItem(config.storageKey)
@@ -89,11 +141,11 @@ export function useChat() {
         },
         body: JSON.stringify({
           model,
-          max_tokens: 2048,
-          temperature: 0.3,
+          max_tokens: getMaxTokens(verbosity),
+          temperature: getTemperature(objectivity),
           stream: true,
           messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: buildSystemPrompt(verbosity, objectivity) },
             { role: 'user', content: userContent },
           ],
         }),
