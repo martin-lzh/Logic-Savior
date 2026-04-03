@@ -256,7 +256,7 @@ function autoResize() {
     return
   }
   el.style.height = 'auto'
-  const maxH = window.innerHeight * 0.3
+  const maxH = window.innerHeight * 0.6
   const capped = el.scrollHeight > maxH
   el.style.height = (capped ? maxH : el.scrollHeight) + 'px'
   el.style.overflowY = capped ? 'auto' : 'hidden'
