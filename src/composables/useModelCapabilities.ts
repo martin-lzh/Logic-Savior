@@ -2,24 +2,6 @@
 import { ref } from 'vue'
 import type { Provider } from './useChat'
 
-// Static allowlist for OpenAI models known to support vision (image input)
-// OpenAI doesn't expose a capability flag in their /v1/models response
-const OPENAI_VISION_MODELS = new Set([
-  'gpt-4o',
-  'gpt-4o-mini',
-  'gpt-4-turbo',
-  'gpt-4-turbo-2024-04-09',
-  'gpt-4-vision-preview',
-  'gpt-4.1',
-  'gpt-4.1-mini',
-  'gpt-4.1-nano',
-  'o1',
-  'o1-mini',
-  'o3',
-  'o3-mini',
-  'o4-mini',
-])
-
 // Cache: provider+baseUrl → Map<modelId, boolean>
 const visionCache = new Map<string, Map<string, boolean>>()
 
@@ -51,11 +33,9 @@ export function useModelCapabilities() {
     }
 
     if (provider === 'openai' && !isCustomBaseUrl(provider, baseUrl)) {
-      // Use static allowlist for standard OpenAI endpoint
-      const result = OPENAI_VISION_MODELS.has(model) || 
-        Array.from(OPENAI_VISION_MODELS).some(v => model.startsWith(v))
-      setCached(cacheKey, model, result)
-      supportsVision.value = result
+      // All current OpenAI models support vision input
+      setCached(cacheKey, model, true)
+      supportsVision.value = true
       checking.value = false
       return
     }
