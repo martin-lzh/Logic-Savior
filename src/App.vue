@@ -180,6 +180,7 @@ const inputCollapsed = ref(false)
 const { images, imageError, addFiles, removeImage, clearImages, handlePaste, handleDrop, handleDragOver } = useImageUpload()
 const fileInputEl = ref<HTMLInputElement | null>(null)
 const isDragOver = ref(false)
+const lastSubmittedImages = ref<string[]>([])
 
 function openFilePicker() {
   fileInputEl.value?.click()
@@ -243,11 +244,13 @@ function toggleInputCollapse() {
 
 function handleSubmit() {
   const text = inputText.value.trim()
-  if ((!text && images.value.length === 0) || isStreaming.value) return
-  const imagesCopy = [...images.value] // snapshot before clearing
+  // On regenerate, reuse cached images if no new ones were added
+  const currentImages = images.value.length > 0 ? [...images.value] : [...lastSubmittedImages.value]
+  if ((!text && currentImages.length === 0) || isStreaming.value) return
+  lastSubmittedImages.value = currentImages
   inputCollapsed.value = true
   nextTick(autoResize)
-  submit(text, imagesCopy)
+  submit(text, currentImages)
   clearImages()
 }
 
@@ -256,6 +259,7 @@ function handleClear() {
   response.value = ''
   chatError.value = ''
   clearImages()
+  lastSubmittedImages.value = []
   inputCollapsed.value = false
   nextTick(autoResize)
 }
@@ -642,7 +646,7 @@ onMounted(() => {
         <button
           v-if="!isStreaming"
           @click="handleSubmit"
-          :disabled="!inputText.trim() && images.length === 0"
+          :disabled="!inputText.trim() && images.length === 0 && lastSubmittedImages.length === 0"
           class="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent-light dark:bg-accent-dark text-white dark:text-black text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.97] transition-transform min-h-[44px]"
         >
           <RefreshCw v-if="response" :size="16" />
@@ -673,7 +677,7 @@ onMounted(() => {
       <button
         v-if="!isStreaming"
         @click="handleSubmit"
-        :disabled="!inputText.trim() && images.length === 0"
+        :disabled="!inputText.trim() && images.length === 0 && lastSubmittedImages.length === 0"
         class="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent-light dark:bg-accent-dark text-white dark:text-black text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.97] transition-transform min-h-[44px]"
       >
         <RefreshCw v-if="response" :size="16" />
