@@ -68,8 +68,31 @@ function edgeFunctionDevPlugin(): Plugin {
   }
 }
 
+// Mark vue-i18n and @intlify modules as having side effects so Rollup preserves
+// the registerMessageCompiler() call that both packages ship with "sideEffects": false.
+function vueI18nSideEffectsPlugin(): Plugin {
+  return {
+    name: 'vue-i18n-side-effects',
+    enforce: 'pre',
+    async resolveId(source, importer, options) {
+      if (source.includes('vue-i18n') || source.includes('@intlify')) {
+        const resolved = await this.resolve(source, importer, { ...options, skipSelf: true })
+        if (resolved) {
+          return { ...resolved, moduleSideEffects: true }
+        }
+      }
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [vue(), edgeFunctionDevPlugin()],
+  plugins: [vue(), vueI18nSideEffectsPlugin(), edgeFunctionDevPlugin()],
+  define: {
+    __VUE_I18N_FULL_INSTALL__: true,
+    __VUE_I18N_LEGACY_API__: false,
+    __INTLIFY_PROD_DEVTOOLS__: false,
+    __INTLIFY_DROP_MESSAGE_COMPILER__: false,
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
