@@ -1,6 +1,6 @@
 export default {
   header: {
-    title: 'Logic Saver',
+    title: 'Logic Savior',
     toggleDarkMode: 'Toggle dark mode',
     settings: 'Settings',
     language: 'Switch language',

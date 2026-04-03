@@ -1,4 +1,4 @@
-# Logic Saver
+# Logic Savior
 
 A mobile-first web app that transforms raw, chaotic social media text into clean, structured Markdown using LLMs. Bring Your Own Key — no server stores any user data or API credentials.
 
@@ -30,8 +30,8 @@ A mobile-first web app that transforms raw, chaotic social media text into clean
 
 ```bash
 # Clone the repo
-git clone https://github.com/<your-username>/Logic-Saver.git
-cd Logic-Saver
+git clone https://github.com/<your-username>/Logic-Savior.git
+cd Logic-Savior
 
 # Install dependencies
 npm install

@@ -5,8 +5,8 @@ const PROVIDER_DEFAULTS: Record<string, { defaultBaseUrl: string; extraHeaders: 
   openrouter: {
     defaultBaseUrl: 'https://openrouter.ai/api/v1',
     extraHeaders: {
-      'HTTP-Referer': 'https://logic-saver.vercel.app',
-      'X-Title': 'Logic Saver',
+      'HTTP-Referer': 'https://logic-savior.vercel.app',
+      'X-Title': 'Logic Savior',
     },
   },
   openai: {

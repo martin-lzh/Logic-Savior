@@ -190,11 +190,11 @@ const inputCollapsed = ref(false)
 const verbosityLabel = computed(() => t(`verbosity.${verbosity.value}`))
 const objectivityLabel = computed(() => t(`objectivity.${objectivity.value}`))
 
-const verbosity = ref(Number(localStorage.getItem('logic_saver_verbosity')) || 5)
-const objectivity = ref(Number(localStorage.getItem('logic_saver_objectivity')) || 5)
+const verbosity = ref(Number(localStorage.getItem('logic_savior_verbosity')) || 5)
+const objectivity = ref(Number(localStorage.getItem('logic_savior_objectivity')) || 5)
 
-watch(verbosity, (v) => localStorage.setItem('logic_saver_verbosity', String(v)))
-watch(objectivity, (v) => localStorage.setItem('logic_saver_objectivity', String(v)))
+watch(verbosity, (v) => localStorage.setItem('logic_savior_verbosity', String(v)))
+watch(objectivity, (v) => localStorage.setItem('logic_savior_objectivity', String(v)))
 
 // --- Image upload ---
 const { images, imageError, addFiles, removeImage, clearImages, handlePaste, handleDrop, handleDragOver } = useImageUpload()
@@ -314,7 +314,7 @@ async function exportAsImage() {
       },
     })
     const link = document.createElement('a')
-    link.download = 'logic-saver-output.png'
+    link.download = 'logic-savior-output.png'
     link.href = dataUrl
     link.click()
   } catch {
